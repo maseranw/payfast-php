@@ -93,9 +93,20 @@ class Itn
                 continue;
             }
 
-            if (!is_string($value)) {
+            // An optional field PayFast didn't send arrives as null through
+            // Laravel's request bag rather than being absent from the array
+            // entirely - treat it the same as absent. Scalars (e.g. an int
+            // custom_int field) are coerced to string; only a genuinely
+            // malformed payload (an array value) is rejected.
+            if ($value === null) {
+                continue;
+            }
+
+            if (is_array($value)) {
                 return [null, "Invalid ITN field \"{$key}\": expected a string"];
             }
+
+            $value = is_bool($value) ? ($value ? '1' : '0') : (string) $value;
 
             $paramString .= "{$key}=" . urlencode(trim($value)) . '&';
         }

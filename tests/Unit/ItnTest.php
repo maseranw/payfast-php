@@ -138,6 +138,31 @@ class ItnTest extends TestCase
         $this->assertStringContainsString('amount_gross', $result['reason']);
     }
 
+    public function test_verify_incoming_treats_a_null_optional_field_as_absent(): void
+    {
+        // Regression test: Laravel's Request::all() represents a field
+        // PayFast didn't send as null rather than omitting the array key
+        // entirely (e.g. an unset item_description). buildParamString used
+        // to reject any non-string value outright, so every real ITN with
+        // an unset optional field failed with "expected a string" even
+        // though the field was correctly excluded from the signed payload.
+        $httpPost = fn (string $url, string $body) => 'VALID';
+        $body = $this->buildValidBody();
+        $body['item_description'] = null;
+        $body['custom_int1'] = null;
+
+        $result = Itn::verifyIncoming(
+            $body,
+            merchantId: '10000100',
+            passphrase: 'passphrase123',
+            sandbox: true,
+            sourceIp: '1.2.3.4',
+            httpPost: $httpPost
+        );
+
+        $this->assertTrue($result['valid']);
+    }
+
     public function test_verify_incoming_skips_source_ip_check_in_sandbox(): void
     {
         $reverseDnsCalled = false;
