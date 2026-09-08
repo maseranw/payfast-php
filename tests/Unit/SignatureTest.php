@@ -32,6 +32,34 @@ class SignatureTest extends TestCase
         $this->assertSame(md5($expectedString), $signature);
     }
 
+    public function test_generate_for_initiate_includes_custom_fields_in_payfasts_canonical_order(): void
+    {
+        // Regression test: custom_str1-5/custom_int1-5 were previously missing
+        // from FIELD_ORDER, so a caller that sends them (e.g. to carry a slug
+        // or internal ID through checkout) produced a signature PayFast's own
+        // ITN validation would never match, since PayFast includes any custom
+        // field that was actually sent when it recomputes the signature.
+        $data = [
+            'merchant_id' => '10000100',
+            'merchant_key' => '46f0cd694581a',
+            'm_payment_id' => 'PAY-1',
+            'amount' => '10.00',
+            'item_name' => 'Song',
+            'custom_str1' => 'song-slug',
+            'custom_str2' => '37071',
+            'custom_int1' => '5',
+        ];
+
+        $signature = Signature::generateForInitiate($data, 'jt7NOE43FZPn');
+
+        $expectedString = 'merchant_id=10000100&merchant_key=46f0cd694581a'
+            . '&m_payment_id=PAY-1&amount=10.00&item_name=' . urlencode('Song')
+            . '&custom_int1=5&custom_str1=song-slug&custom_str2=37071'
+            . '&passphrase=jt7NOE43FZPn';
+
+        $this->assertSame(md5($expectedString), $signature);
+    }
+
     public function test_generate_for_initiate_omits_empty_and_missing_fields(): void
     {
         $withEmpty = Signature::generateForInitiate([
