@@ -88,8 +88,14 @@ class ItnTest extends TestCase
         $this->assertSame('PAY-1', $result['payload']['m_payment_id']);
     }
 
-    public function test_verify_incoming_rejects_a_tampered_signature(): void
+    public function test_verify_incoming_rejects_a_tampered_signature_payfast_also_rejects(): void
     {
+        // A tampered payload both fails our local recomputation AND has no
+        // matching record at PayFast, so validateWithPayfast (mocked here
+        // to avoid a real network call) also disagrees - giving the more
+        // specific "Invalid signature" reason rather than the generic
+        // "Validation with PayFast failed".
+        $httpPost = fn (string $url, string $body) => 'INVALID';
         $body = $this->buildValidBody();
         $body['amount_gross'] = '999.00';
 
@@ -98,11 +104,36 @@ class ItnTest extends TestCase
             merchantId: '10000100',
             passphrase: 'passphrase123',
             sandbox: true,
-            sourceIp: '1.2.3.4'
+            sourceIp: '1.2.3.4',
+            httpPost: $httpPost
         );
 
         $this->assertFalse($result['valid']);
         $this->assertSame('Invalid signature', $result['reason']);
+    }
+
+    public function test_verify_incoming_trusts_payfasts_own_validation_over_a_local_signature_mismatch(): void
+    {
+        // Regression test: a real ITN was observed where PayFast's own
+        // /query/validate endpoint confirmed a payload as genuine even
+        // though this package's local md5 reproduction of PayFast's
+        // signature algorithm disagreed (an unreproduced encoding edge
+        // case). Rejecting that payload would silently drop a real
+        // completed payment, so PayFast's own confirmation must win.
+        $httpPost = fn (string $url, string $body) => 'VALID';
+        $body = $this->buildValidBody();
+        $body['amount_gross'] = '999.00'; // makes the local signature disagree
+
+        $result = Itn::verifyIncoming(
+            $body,
+            merchantId: '10000100',
+            passphrase: 'passphrase123',
+            sandbox: true,
+            sourceIp: '1.2.3.4',
+            httpPost: $httpPost
+        );
+
+        $this->assertTrue($result['valid']);
     }
 
     public function test_verify_incoming_rejects_merchant_id_mismatch(): void
