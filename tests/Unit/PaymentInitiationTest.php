@@ -72,14 +72,52 @@ class PaymentInitiationTest extends TestCase
         $this->assertSame(PaymentInitiation::processUrl($this->config()), $result['payfastUrl']);
     }
 
-    public function test_defaults_billing_date_to_today(): void
+    public function test_once_off_payments_omit_subscription_fields(): void
     {
         $result = PaymentInitiation::build(
-            ['amount' => '10.00', 'item_name' => 'Plan', 'm_payment_id' => 'PAY-1'],
+            ['amount' => '10.00', 'item_name' => 'Song', 'm_payment_id' => 'PAY-1'],
             $this->config()
         );
 
+        $this->assertArrayNotHasKey('subscription_type', $result['paymentData']);
+        $this->assertArrayNotHasKey('recurring_amount', $result['paymentData']);
+        $this->assertArrayNotHasKey('billing_date', $result['paymentData']);
+    }
+
+    public function test_once_off_payments_pass_through_custom_fields(): void
+    {
+        $result = PaymentInitiation::build(
+            [
+                'amount' => '10.00',
+                'item_name' => 'Song',
+                'm_payment_id' => 'PAY-1',
+                'custom_str1' => 'song-slug',
+                'custom_str2' => '42',
+            ],
+            $this->config()
+        );
+
+        $this->assertSame('song-slug', $result['paymentData']['custom_str1']);
+        $this->assertSame('42', $result['paymentData']['custom_str2']);
+    }
+
+    public function test_subscription_type_opts_into_subscription_fields_with_defaults(): void
+    {
+        $result = PaymentInitiation::build(
+            [
+                'amount' => '10.00',
+                'item_name' => 'Plan',
+                'm_payment_id' => 'PAY-1',
+                'subscription_type' => 1,
+            ],
+            $this->config()
+        );
+
+        $this->assertSame(1, $result['paymentData']['subscription_type']);
         $this->assertSame(date('Y-m-d'), $result['paymentData']['billing_date']);
+        $this->assertSame('10.00', $result['paymentData']['recurring_amount']);
+        $this->assertSame(3, $result['paymentData']['frequency']);
+        $this->assertSame(0, $result['paymentData']['cycles']);
     }
 
     public function test_process_url_uses_sandbox_when_configured(): void

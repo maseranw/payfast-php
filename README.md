@@ -22,12 +22,25 @@ use Ngelekanyo\Payfast\Core\Itn;
 
 $config = PayfastConfig::fromEnv(); // reads PAYFAST_* env vars
 
-// Initiate a payment
-$result = PaymentInitiation::build($_POST, $config);
+// Initiate a once-off payment (e.g. a product purchase)
+$result = PaymentInitiation::build([
+    'amount' => '99.00',
+    'item_name' => 'Widget',
+    'm_payment_id' => 'ORDER-123',
+], $config);
 if (isset($result['error'])) {
     // $result['error'] is a user-facing validation message
 }
 // $result['paymentData'] is the signed payload to submit to $result['payfastUrl']
+
+// Initiate a subscription by including subscription_type — this adds
+// billing_date/recurring_amount/frequency/cycles with sensible defaults
+$result = PaymentInitiation::build([
+    'amount' => '99.00',
+    'item_name' => 'Pro Plan',
+    'm_payment_id' => 'SUB-123',
+    'subscription_type' => 1,
+], $config);
 
 // Verify an incoming ITN (webhook) request
 $result = Itn::verifyIncoming(

@@ -23,8 +23,6 @@ class PaymentInitiation
         }
 
         $formattedAmount = number_format($parsedAmount, 2, '.', '');
-        $billingDate = $body['billing_date'] ?? date('Y-m-d');
-        $recurringAmount = $body['recurring_amount'] ?? $formattedAmount;
 
         $paymentData = [
             'merchant_id' => $config->merchantId ?? '',
@@ -39,15 +37,24 @@ class PaymentInitiation
             'amount' => $formattedAmount,
             'item_name' => $itemName,
             'item_description' => $body['item_description'] ?? '',
-            'subscription_type' => $body['subscription_type'] ?? 1,
-            'billing_date' => $billingDate,
-            'recurring_amount' => $recurringAmount,
-            'frequency' => $body['frequency'] ?? 3,
-            'cycles' => $body['cycles'] ?? 0,
-            'subscription_notify_email' => $body['subscription_notify_email'] ?? true,
-            'subscription_notify_webhook' => $body['subscription_notify_webhook'] ?? true,
-            'subscription_notify_buyer' => $body['subscription_notify_buyer'] ?? true,
         ];
+
+        foreach (['custom_str1', 'custom_str2', 'custom_str3', 'custom_str4', 'custom_str5'] as $customField) {
+            if (isset($body[$customField])) {
+                $paymentData[$customField] = $body[$customField];
+            }
+        }
+
+        if (array_key_exists('subscription_type', $body)) {
+            $paymentData['subscription_type'] = $body['subscription_type'];
+            $paymentData['billing_date'] = $body['billing_date'] ?? date('Y-m-d');
+            $paymentData['recurring_amount'] = $body['recurring_amount'] ?? $formattedAmount;
+            $paymentData['frequency'] = $body['frequency'] ?? 3;
+            $paymentData['cycles'] = $body['cycles'] ?? 0;
+            $paymentData['subscription_notify_email'] = $body['subscription_notify_email'] ?? true;
+            $paymentData['subscription_notify_webhook'] = $body['subscription_notify_webhook'] ?? true;
+            $paymentData['subscription_notify_buyer'] = $body['subscription_notify_buyer'] ?? true;
+        }
 
         $paymentData['signature'] = Signature::generateForInitiate($paymentData, $config->passphrase);
 
