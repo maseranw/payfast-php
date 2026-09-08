@@ -153,7 +153,22 @@ class Itn
         // payload as genuine. Rejecting those would silently drop real
         // completed payments, so a local mismatch is only fatal when
         // PayFast's own validation also fails to confirm the payload.
-        if (!self::validateWithPayfast($payload, $sandbox, $httpPost)) {
+        //
+        // Echo back exactly what PayFast sent, not $payload: createPayload()
+        // pads every field in self::FIELDS to '' when absent, so validating
+        // with $payload injects fields (e.g. custom_str4, token) that were
+        // never part of the original ITN. PayFast's own signature check on
+        // their end then disagrees with the payload it receives, and a
+        // genuine notification is rejected as a false negative.
+        $cleanBody = [];
+        foreach ($body as $key => $value) {
+            if ($value === null || is_array($value)) {
+                continue;
+            }
+            $cleanBody[$key] = is_bool($value) ? ($value ? '1' : '0') : (string) $value;
+        }
+
+        if (!self::validateWithPayfast($cleanBody, $sandbox, $httpPost)) {
             return [
                 'valid' => false,
                 'reason' => $locallyValid ? 'Validation with PayFast failed' : 'Invalid signature',

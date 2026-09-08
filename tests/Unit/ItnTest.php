@@ -194,6 +194,42 @@ class ItnTest extends TestCase
         $this->assertTrue($result['valid']);
     }
 
+    public function test_verify_incoming_validates_with_payfast_using_only_the_fields_actually_received(): void
+    {
+        // Regression test: createPayload() pads every field in self::FIELDS
+        // to '' when the ITN didn't include it (e.g. custom_str4, token).
+        // Echoing that padded array back to PayFast's /query/validate adds
+        // fields PayFast never sent, so PayFast's own check disagrees with
+        // what it receives and a genuine notification gets rejected. Only
+        // the fields actually present in the raw body should be sent back.
+        $receivedKeys = null;
+        $httpPost = function (string $url, string $requestBody) use (&$receivedKeys) {
+            parse_str($requestBody, $parsed);
+            $receivedKeys = array_keys($parsed);
+            return 'VALID';
+        };
+
+        $body = $this->buildValidBody();
+        // buildValidBody() only sets a handful of fields; confirm none of
+        // the untouched self::FIELDS entries (e.g. custom_str1, token)
+        // leak into what gets sent to PayFast.
+        $result = Itn::verifyIncoming(
+            $body,
+            merchantId: '10000100',
+            passphrase: 'passphrase123',
+            sandbox: true,
+            sourceIp: '1.2.3.4',
+            httpPost: $httpPost
+        );
+
+        $this->assertTrue($result['valid']);
+        $this->assertNotNull($receivedKeys);
+        sort($receivedKeys);
+        $expected = array_keys($body);
+        sort($expected);
+        $this->assertSame($expected, $receivedKeys);
+    }
+
     public function test_verify_incoming_skips_source_ip_check_in_sandbox(): void
     {
         $reverseDnsCalled = false;
