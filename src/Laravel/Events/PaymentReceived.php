@@ -4,7 +4,7 @@ namespace Ngelekanyo\Payfast\Laravel\Events;
 
 class PaymentReceived
 {
-    public function __construct(public readonly array $itnData)
+    public function __construct(public array $itnData)
     {
     }
 }

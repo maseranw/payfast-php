@@ -5,13 +5,13 @@ namespace Ngelekanyo\Payfast\Core;
 final class PayfastConfig
 {
     public function __construct(
-        public readonly bool $sandbox,
-        public readonly ?string $merchantId,
-        public readonly ?string $merchantKey,
-        public readonly string $passphrase,
-        public readonly string $returnUrl,
-        public readonly string $cancelUrl,
-        public readonly string $notifyUrl,
+        public bool $sandbox,
+        public ?string $merchantId,
+        public ?string $merchantKey,
+        public string $passphrase,
+        public string $returnUrl,
+        public string $cancelUrl,
+        public string $notifyUrl,
     ) {
     }
 

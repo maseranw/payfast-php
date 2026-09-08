@@ -7,10 +7,10 @@ use Ngelekanyo\Payfast\Core\SubscriptionApiClient;
 class SubscriptionsApi
 {
     public function __construct(
-        private readonly string $baseUrl,
-        private readonly ?string $merchantId,
-        private readonly ?string $passphrase,
-        private readonly bool $sandbox,
+        private string $baseUrl,
+        private ?string $merchantId,
+        private ?string $passphrase,
+        private bool $sandbox,
     ) {
     }
 

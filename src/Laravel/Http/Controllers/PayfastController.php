@@ -14,10 +14,10 @@ use Ngelekanyo\Payfast\Laravel\SubscriptionsApi;
 class PayfastController
 {
     public function __construct(
-        private readonly PayfastConfig $config,
-        private readonly SubscriptionsApi $subscriptionsApi,
-        private readonly Dispatcher $events,
-        private readonly ?\Closure $itnHttpPost = null,
+        private PayfastConfig $config,
+        private SubscriptionsApi $subscriptionsApi,
+        private Dispatcher $events,
+        private ?\Closure $itnHttpPost = null,
     ) {
     }
 
