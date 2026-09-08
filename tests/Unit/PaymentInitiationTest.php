@@ -72,6 +72,34 @@ class PaymentInitiationTest extends TestCase
         $this->assertSame(PaymentInitiation::processUrl($this->config()), $result['payfastUrl']);
     }
 
+    public function test_return_and_cancel_url_can_be_overridden_per_call(): void
+    {
+        $result = PaymentInitiation::build(
+            [
+                'amount' => '10.00',
+                'item_name' => 'Song',
+                'm_payment_id' => 'PAY-1',
+                'return_url' => 'https://example.com/return/song-slug',
+                'cancel_url' => 'https://example.com/cancel/song-slug',
+            ],
+            $this->config()
+        );
+
+        $this->assertSame('https://example.com/return/song-slug', $result['paymentData']['return_url']);
+        $this->assertSame('https://example.com/cancel/song-slug', $result['paymentData']['cancel_url']);
+    }
+
+    public function test_return_and_cancel_url_default_to_config(): void
+    {
+        $result = PaymentInitiation::build(
+            ['amount' => '10.00', 'item_name' => 'Song', 'm_payment_id' => 'PAY-1'],
+            $this->config()
+        );
+
+        $this->assertSame('https://example.com/return', $result['paymentData']['return_url']);
+        $this->assertSame('https://example.com/cancel', $result['paymentData']['cancel_url']);
+    }
+
     public function test_once_off_payments_omit_subscription_fields(): void
     {
         $result = PaymentInitiation::build(

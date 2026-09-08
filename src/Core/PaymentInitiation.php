@@ -27,8 +27,8 @@ class PaymentInitiation
         $paymentData = [
             'merchant_id' => $config->merchantId ?? '',
             'merchant_key' => $config->merchantKey ?? '',
-            'return_url' => $config->returnUrl,
-            'cancel_url' => $config->cancelUrl,
+            'return_url' => $body['return_url'] ?? $config->returnUrl,
+            'cancel_url' => $body['cancel_url'] ?? $config->cancelUrl,
             'notify_url' => $config->notifyUrl,
             'name_first' => $body['name_first'] ?? '',
             'name_last' => $body['name_last'] ?? '',
